@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Kolikant/bowlingScoreNode#readme",
   "dependencies": {
     "express": "^4.18.2",
+    "express-validator": "^6.15.0",
     "mongodb": "^5.1.0"
   }
 }
