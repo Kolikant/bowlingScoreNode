@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const config = require("./config");
-const { isSpare, isStrike, isStrikeOrSpare } = require("./logics")
+const { isStrikeOrSpare, calculateScore } = require("./logics")
 
 const app = express()
 app.use(bodyParser.json({ extended: true }));
@@ -18,7 +18,7 @@ const client = new MongoClient(config.mongoUri,  {
 
 async function initServer() {
   await client.connect();
-  games = await client.db("BowlingScore").collection("games");
+  const games = await client.db("BowlingScore").collection("games");
   
   //TODO: validate input is name
   app.post('/newPlayer', async (req, res) => {
@@ -36,7 +36,7 @@ async function initServer() {
 
   app.post('/postRoll/:playerName', async (req, res) => {
     const game = await games.findOne({ playerName: req.params.playerName })
-    frameIndex = game.currFrame - 1
+    let frameIndex = game.currFrame - 1
     if(frameIndex > 10) {
       return res.send("Game allready finisehd");
     }
@@ -66,9 +66,9 @@ async function initServer() {
       currFrame: game.currFrame,
     }})
 
-    res.send(game.frames)
-    // score = calculateScore(game.frames)
-    // return res.send({ frame: game.frames, score })
+    // res.send(game.frames)
+    const score = calculateScore(game.frames)
+    return res.send({ frame: game.frames, score })
   })  
   
   // app.get('/a', async(req, res) => {

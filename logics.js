@@ -12,75 +12,84 @@ module.exports.isStrikeOrSpare = function(frame) {
     return module.exports.isStrike(frame) || module.exports.isSpare(frame)
 }
 
-// getNextRoll(frames, index)
-
-getFrameScore = function(frames, index) {
-    score = null;
-    if(!isStrike(frames[index]) && !isSpare(frames[index])) {
-        score = frames[index].roll1 + frames[index].roll2
+hasNextRoll = function (frames, index) {
+    if(index > 9) {
+        return true
+    } 
+    if(index == 9) {
+        return frames[index].rolls[2] != null
     }
-    if(isSpare(frames[index])) {
-        if(index == 9) {
-            score = frames[index].roll1 + frames[index].roll2 + bonusRoll
-        } else if (frames.length > index + 1) {
-            score = frames[index].roll1 + frames[index]
-                + frames[index + 1].roll1 + frames[index + 1]
-        }
-    }
-    if(isStrike(frames[index])) {
-        if(index == 9) {
-            score = frames[index].roll1 + frames[index].roll2 + bonusRoll
-        }
-        // if()        
-    }
+    return frames[index + 1].rolls[0] != null
+}
 
+getNextRoll = function (frames, index) {
+    if(index > 9) {
+        return 0
+    } 
+    if(index == 9) {
+        return frames[index].rolls[2]
+    }
+    return frames[index + 1].rolls[0]
+}
 
-    if(isStrike(frames[index]) || isSpare(frames[index])) {
-        if(index == 9) {
-            score += frames[index].bonusRoll
-        } else if (frames.length > index + 1) {
-            if(frames[index].roll1 == 10) {
-                score += frames[index + 1].roll1 + frames[index + 1].roll2
-            } else {
-                score += frames[index + 1].roll1
-            }
+hasNextTwoRolls = function (frames, index) {
+    if(index > 9) {
+        return true
+    } 
+    if(index == 9) {
+        return frames[index].rolls[2] != null
+    }
+    if(module.exports.isStrike(frames[index + 1])) {
+        return hasNextRoll(frames, index) && hasNextRoll(frames, index + 1)
+    }
+    return frames[index + 1].rolls[0] != null && frames[index + 1].rolls[1] != null
+}
+
+getNextTwoRolls = function (frames, index) {
+    if(index > 9) {
+        return 0
+    } 
+    if(index == 9) {
+        return frames[index].rolls[2]
+    }
+    if(module.exports.isStrike(frames[index + 1])) {
+        return getNextRoll(frames, index) + getNextRoll(frames, index + 1)
+    }
+    return frames[index + 1].rolls[0] + frames[index + 1].rolls[1]
+}
+
+getFrameScoreByIndex = function(frames, index) {
+    if(frames[index].score && frames[index].score != null) {
+        return frames[index].score
+    } 
+    if(module.exports.isSpare(frames[index])) {
+        if(hasNextRoll(frames, index)) {
+            console.log(getNextRoll(frames, index))
+            return frames[index].rolls[0] + frames[index].rolls[1] + getNextRoll(frames, index)
         } else {
             return null
         }
     }
-    return score
+    if(module.exports.isStrike(frames[index])) {
+        if(hasNextTwoRolls(frames, index)) {
+            return frames[index].rolls[0] + frames[index].rolls[1] + getNextTwoRolls(frames, index)
+        } else {
+            return null
+        }
+    }
+    if(frames[index].rolls[0] != null && frames[index].rolls[1] != null) {
+        return frames[index].rolls[0] + frames[index].rolls[1]
+    }
+
 }
 
 module.exports.calculateScore = function(frames) {
     let totalScore = 0;
 
     frames.map((frame, index) => {
-        score = getFrameScore(frames, index) 
-        totalScore += score
+        score = getFrameScoreByIndex(frames, index) 
+        totalScore += score || 0
         return Object.assign(frame, { score })
     })
     return totalScore
 }
-
-// strike = false;
-// spare = false;
-// score += frame.roll1 + frame.roll2
-// if(frame.bonusRoll) {
-//     score += frame.bonusRoll;
-// }
-// if(spare || strike) {
-//     score += frame.roll1
-// }
-// if(strike) {
-//     score += frame.roll2
-// }
-// spare = strike = false
-
-// if(frame.roll1 == 10) {
-//     strike = true;
-// } else if(frame.roll1 + frame.roll2 == 10 ){
-//     spare = true;
-// }      
-// console.log("_____________________")
-// console.log(frame)
-// console.log(score)
