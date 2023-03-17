@@ -42,8 +42,12 @@ async function initServer() {
     }
     if(frameIndex == 10) {
       if(isStrikeOrSpare(game.frames[9])) {
-        game.frames[9].rolls[2] = req.body.roll
-        game.currFrame++;
+        if(game.frames[9].rolls[1] == null) {
+          game.frames[9].rolls[1] = req.body.roll
+        } else {
+          game.frames[9].rolls[2] = req.body.roll
+          game.currFrame++;
+        }
       } else {
         game.currFrame++;
         return res.send("Game allready finished");
@@ -70,13 +74,6 @@ async function initServer() {
     const score = calculateScore(game.frames)
     return res.send({ frame: game.frames, score })
   })  
-  
-  // app.get('/a', async(req, res) => {
-  //   game = await games.findOne({ playerName: "a" })
-  //   score = calculateScore(game.frames)
-  //   console.log(score)
-  //   res.send(score)
-  // })
 
   app.listen(config.port, async () => {
     console.log(`Example app listening on port ${config.port}`)
