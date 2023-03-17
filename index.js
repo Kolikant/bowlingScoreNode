@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const config = require("./config");
-const { addRoll } = require("./logics")
+const { isSpare, isStrike, isStrikeOrSpare } = require("./logics")
 
 const app = express()
 app.use(bodyParser.json({ extended: true }));
@@ -23,10 +23,13 @@ async function initServer() {
   //TODO: validate input is name
   app.post('/newPlayer', async (req, res) => {
     games.deleteMany({ playerName: req.body.playerName })
+    const emptyGameArray = new Array(9).fill({ rolls: [null, null] })
+    emptyGameArray.push({ rolls: [null, null, null] })
+    
     games.insertOne({ 
       playerName: req.body.playerName,
       currFrame: 1,
-      frames: []
+      frames: emptyGameArray
     })
     res.send('New Player Inserted!')
   })
@@ -38,30 +41,43 @@ async function initServer() {
       return res.send("Game allready finisehd");
     }
     if(frameIndex == 10) {
-      if(typeof game.frames[9].bonusRoll == 'undefined' && (game.frames[9].roll1 == 10 || game.frames[9].roll1 + game.frames[9].roll2 == 10)) {
-        game.frames[9].bonusRoll = req.body.roll
+      if(isStrikeOrSpare(game.frames[9])) {
+        game.frames[9].rolls[2] = req.body.roll
+        game.currFrame++;
       } else {
         game.currFrame++;
         return res.send("Game allready finished");
       }
     } else {
-      if(typeof game.frames[frameIndex] == 'undefined') {
-        game.frames[frameIndex] = { roll1: req.body.roll }
+      if (game.frames[frameIndex].rolls[0] == null) {
+        game.frames[frameIndex].rolls[0] = req.body.roll
+        if(game.frames[frameIndex].rolls[0] == 10) {
+          game.currFrame++;
+        }
       } else {
-        game.frames[frameIndex].roll2 = req.body.roll
-      }
-      if("roll2" in game.frames[frameIndex] || game.frames[frameIndex].roll1 == 10) {
+        game.frames[frameIndex].rolls[1] = req.body.roll
         game.currFrame++;
       }
+
     }
     
     games.updateOne({ playerName: req.params.playerName }, {$set: {
       frames: game.frames,
       currFrame: game.currFrame,
     }})
-    return res.send(game.frames)
+
+    res.send(game.frames)
+    // score = calculateScore(game.frames)
+    // return res.send({ frame: game.frames, score })
   })  
   
+  // app.get('/a', async(req, res) => {
+  //   game = await games.findOne({ playerName: "a" })
+  //   score = calculateScore(game.frames)
+  //   console.log(score)
+  //   res.send(score)
+  // })
+
   app.listen(config.port, async () => {
     console.log(`Example app listening on port ${config.port}`)
   })
